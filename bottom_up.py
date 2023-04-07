@@ -30,7 +30,7 @@ def bottom_up(word):
         # print(f"s = {state} | L1 = {' '.join(l1)} | L2 = {' '.join(str(x) for x in l2)} | idx = {idx}")
         if state == State.q:
             while check_item(l1) is not None:
-                state = reduce(l1, l2, check_item(l1))
+                reduce(l1, l2, check_item(l1))
             if idx < len(word):
                 state, idx = shift(idx, l1, l2, word)
             elif len(l1) == 1 and l1[len(l1) - 1] == 'A':
