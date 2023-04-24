@@ -136,18 +136,19 @@ def output(l2):
 
 
 if __name__ == "__main__":
-    assert bottom_up("!a+b!") == "6474231", "Should be 6474231"
-    assert bottom_up("!a*b!") == "674521", "Should be 674521"
-    assert bottom_up("!(a+b)*(b+a)!") == "647423874642384521", "Should be 647423874642384521"
-    assert bottom_up("!b*a+a*b!") == "76456745231", "Should be 76456745231"
-    assert bottom_up("!(a+b)*a+b*a!") == "64742386457645231", "Should be 64742386457645231"
-    assert bottom_up("!(a+b*a)*(b*b+a*(a+b+a))!") == "647645238774566474642338452384521", "Should be 647645238774566474642338452384521"
-    assert bottom_up("!a+*b!") is None, "Should be None"
-    assert bottom_up("a+b*a+b") is None, "Should be None"
-    assert bottom_up("a!b") is None, "Should be None"
-    assert bottom_up("!a(b+a()!") is None, "Should be None"
-    assert bottom_up("!a*(b+a)*b!") == "67464238745521", "Should be 67464238745521"
-    print("Everything passed")
+    # assert bottom_up("!a+b!") == "6474231", "Should be 6474231"
+    # assert bottom_up("!a*b!") == "674521", "Should be 674521"
+    # assert bottom_up("!(a+b)*(b+a)!") == "647423874642384521", "Should be 647423874642384521"
+    # assert bottom_up("!b*a+a*b!") == "76456745231", "Should be 76456745231"
+    # assert bottom_up("!(a+b)*a+b*a!") == "64742386457645231", "Should be 64742386457645231"
+    # assert bottom_up("!(a+b*a)*(b*b+a*(a+b+a))!") == "647645238774566474642338452384521", "Should be 647645238774566474642338452384521"
+    # assert bottom_up("!a*(b+a)*b!") == "67464238745521", "Should be 67464238745521"
+    # assert bottom_up("!a+*b!") is None, "Should be None"
+    # assert bottom_up("a+b*a+b") is None, "Should be None"
+    # assert bottom_up("a!b") is None, "Should be None"
+    # assert bottom_up("!a(b+a()!") is None, "Should be None"
+    #
+    # print("Everything passed")
 
-    #term = str(input())
-    #print("Номеров продукций левого вывода: {}", bottom_up(term))
+    term = str(input())
+    print("Номеров продукций левого вывода: {}", bottom_up(term))
