@@ -1,5 +1,7 @@
 # # Метод простого предшествования (с использованием функций предшествования, построенных итерационным методом Флойда)
 import re
+import TableIt
+import copy
 
 TERMS = ["!", "+", "*", "(", ")", "a", "b"]
 N_TERMS = ["A", "B", "B`", "T", "T`", "M"]
@@ -10,6 +12,19 @@ RULES = {
     "T": ["T`"],
     "T`": ["M", "T`*M"],
     "M": ["a", "b", "(B)"]
+}
+
+RULES_INDEX = {
+    "!B!": '1',
+    "B`": '2',
+    "T": '3',
+    "B`+T": '4',
+    "T`": '5',
+    "M": '6',
+    "T`*M": '7',
+    "a": '8',
+    "b": '9',
+    "(B)": '10'
 }
 
 
@@ -48,22 +63,27 @@ def build_L_R_set(L, R):
                 for term in R[el]:
                     if not R[non_term].count(term):
                         R[non_term].append(term)
+
+
 def build_matrix(L, R):
-    s_i = []
-    s_j = []
-    for i in N_TERMS:
-        s_i.append(i)
-        s_j.append(i)
+    # s_i = []
+    # s_j = []
+    # for i in N_TERMS:
+    #     s_i.append(i)
+    #     s_j.append(i)
+    #
+    # for i in TERMS:
+    #     s_i.append(i)
+    #     s_j.append(i)
+    #
+    # s_i.remove('A')
+    # s_j.remove('A')
+    # matrix = [[' ' for c in range(len(s_i) + 1)] for r in range(len(s_j) + 1)]
+    # s_j.insert(0, ' ')
 
-    for i in TERMS:
-        s_i.append(i)
-        s_j.append(i)
-
-    s_i.remove('A')
-    s_j.remove('A')
-
-    matrix = [[' ' for c in range(len(s_i) + 1)] for r in range(len(s_j) + 1)]
-    s_j.insert(0, ' ')
+    s_i = [')', 'a', 'b', 'M', '*', 'T`', 'T', '+', 'B`', 'B', '(', '!']
+    s_j = [' ', '(', 'a', 'b', 'M', '*', 'T`', 'T', '+', 'B`', ')', 'B', '!']
+    matrix = [[' ' for c in range(len(s_i) + 1)] for r in range(len(s_i) + 1)]
     matrix[0] = s_j
     for r in range(len(matrix)):
         for c in range(len(matrix)):
@@ -90,10 +110,11 @@ def build_matrix(L, R):
             # print(f'{rule[idx_el]}{rule[idx_el + 1]}')
             idx_s_j = 0
             idx_s_i = 0
-            for r in range(len(matrix[0])):
-                if rule[idx_el] == matrix[0][r]:
-                    idx_s_i = r
-                if rule[idx_el + 1] == matrix[0][r]:
+            for r in range(len(s_i)):
+                if rule[idx_el] == s_i[r]:
+                    idx_s_i = r + 1
+            for r in range(len(s_j)):
+                if rule[idx_el + 1] == s_j[r]:
                     idx_s_j = r
             matrix[idx_s_i][idx_s_j] = '=.'
 
@@ -104,280 +125,145 @@ def build_matrix(L, R):
             if rule[idx_el] in TERMS and rule[idx_el + 1] in N_TERMS:
                 # print(f'{rule[idx_el]}{rule[idx_el + 1]}')
                 idx_s_i = 0
-
-                for r in range(len(matrix[0])):
-                    if rule[idx_el] == matrix[0][r]:
-                        idx_s_i = r
+                for r in range(len(s_i)):
+                    if rule[idx_el] == s_i[r]:
+                        idx_s_i = r + 1
                 for term_from_L in L.get(rule[idx_el + 1]):
-                    for k in range(len(matrix[0])):
-                        if term_from_L == matrix[0][k]:
+                    for k in range(len(s_j)):
+                        if term_from_L == s_j[k]:
                             matrix[idx_s_i][k] = '<.'
+
     # определяем отношение равенства .>
     # N .> T
     for rule in vector_rules:
         for idx_el in range(len(rule) - 1):
             if rule[idx_el] in N_TERMS and rule[idx_el + 1] in TERMS:
-                #print(f'{rule[idx_el]}{rule[idx_el + 1]}')
+                # print(f'{rule[idx_el]}{rule[idx_el + 1]}')
                 idx_s_j = 0
-                for r in range(len(matrix[0])):
-                    if rule[idx_el + 1] == matrix[0][r]:
+                for r in range(len(s_j)):
+                    if rule[idx_el + 1] == s_j[r]:
                         idx_s_j = r
+                # print(R.get(rule[idx_el]))
                 for term_from_R in R.get(rule[idx_el]):
-                    for k in range(len(matrix[0])):
-                        if term_from_R == matrix[0][k]:
-                            matrix[k][idx_s_j] = '.>'
+                    for k in range(len(s_i)):
+                        if term_from_R == s_i[k]:
+                            matrix[k + 1][idx_s_j] = '.>'
 
-    # определяем отношение равенства .>
-    # N .> N
+    return matrix
 
-    for row in matrix:
-            print(row)
-    pass
+
+def build_functions(matrix):
+    f = {}
+    g = {}
+    for i in range(1, len(matrix)):
+        f[matrix[0][i]] = 1
+        g[matrix[0][i]] = 1
+
+    f_copy = {}
+    g_copy = {}
+
+    while f_copy != f or g_copy != g:
+        f_copy = copy.deepcopy(f)
+        g_copy = copy.deepcopy(g)
+
+        for j in range(len(matrix)):
+            for i in range(len(matrix)):
+                if matrix[i][j] == '.>' and f.get(matrix[i][0]) <= g.get(matrix[0][j]):
+                    f[matrix[i][0]] += 1
+
+        for i in range(len(matrix)):
+            for j in range(len(matrix)):
+                if matrix[i][j] == '<.' and f.get(matrix[i][0]) >= g.get(matrix[0][j]):
+                    g[matrix[0][j]] += 1
+
+        for i in range(len(matrix)):
+            for j in range(len(matrix)):
+                if matrix[i][j] == '=.' and f.get(matrix[i][0]) != g.get(matrix[0][j]):
+                    maximum = max(g[matrix[0][j]], f[matrix[i][0]])
+                    g[matrix[0][j]] = maximum
+                    f[matrix[i][0]] = maximum
+
+    return f, g
+
+
+def translator(f, g, string):
+    res = ""
+    # переносим первый символ в стек и удаляем его из строки
+    stack = [string[0]]
+    string = string[1:]
+    while stack[0] != "A":
+        # если цепочка вся прочитана
+        if len(string) == 0:
+            reduce = []
+            reduce = [stack.pop()] + reduce
+
+            while len(stack) > 0 and f[stack[len(stack) - 1]] >= g[reduce[0]]:
+                reduce = [stack.pop()] + reduce
+
+            rule = "".join(x for x in reduce)
+
+            flag = True
+            for non_term in RULES.keys():
+                for r in RULES.get(non_term):
+                    if r == rule:
+                        res = res + RULES_INDEX.get(r) + " "
+                        flag = False
+                        stack.append(non_term)
+                        break
+            if flag:
+                res = "Строка не принадлежит грамматике"
+                break
+            continue
+
+        # если между вершиной стека и текущим символом входной цепочки нет отношения .>
+        if f[stack[len(stack) - 1]] <= g[string[0]]:
+            stack.append(string[0])
+            string = string[1:]
+            continue
+
+        # если между вершиной стека и текущим символом входной цепочки есть отношение .>
+        if f[stack[len(stack) - 1]] > g[string[0]]:
+            reduce = []
+            reduce = [stack.pop()] + reduce
+            while len(stack) > 0 and f[stack[len(stack) - 1]] >= g[reduce[0]]:
+                reduce = [stack.pop()] + reduce
+
+            rule = "".join(x for x in reduce)
+
+            flag = True
+            for non_term in RULES.keys():
+                for r in RULES.get(non_term):
+                    if r == rule:
+                        res = res + RULES_INDEX.get(r) + " "
+                        flag = False
+                        stack.append(non_term)
+                        break
+            if flag:
+                res = "Строка не принадлежит грамматике"
+                break
+            continue
+
+        res = "Строка не принадлежит грамматике"
+        break
+
+    print(res)
+    return res
+
 
 def main():
     L = {}
     R = {}
     build_L_R_set(L, R)
-    build_matrix(L, R)
+
+    matrix = build_matrix(L, R)
+    f, g = build_functions(matrix)
+    string = "!(a+b)*(a*b)+b!"
+    translator(f, g, string)
+
+    # TableIt.printTable(matrix, useFieldNames=True, color=(26, 156, 171))
+    # print(f)
+    # print(g)
 
 
 if __name__ == "__main__":
     main()
-
-# alt = {
-#     "A1": "!B!",
-#     "B1": "B`",
-#     "B`1": "T",
-#     "B`2": "B`+T",
-#     "T1": "T`",
-#     "T`1": "M",
-#     "T`2": "T`*M",
-#     "M1": "a",
-#     "M2": "b",
-#     "M3": "(B)",
-# }
-# L = {}
-# R = {}
-# for x in alt.keys():
-#     st = x[: len(x) - 1]
-#     L[st] = []
-#     R[st] = []
-# for x in L.keys():
-#     tmp = x + "1"
-#     while alt.get(tmp) != None:
-#         val = alt.get(tmp)
-#         l_tmp = L.get(x)
-#         if len(val) > 1:
-#             if val[1] == "`":
-#                 if (val[0] + val[1]) in l_tmp:
-#                     pass
-#                 else:
-#                     l_tmp.append(val[0] + val[1])
-#             else:
-#                 if (val[0]) in l_tmp:
-#                     pass
-#                 else:
-#                     l_tmp.append(val[0])
-#         else:
-#             if (val[0]) in l_tmp:
-#                 pass
-#             else:
-#                 l_tmp.append(val[0])
-#         L[x] = l_tmp
-#         r_tmp = R.get(x)
-#         if val[len(val) - 1] == "`":
-#             if (val[len(val) - 2] + val[len(val) - 1]) in r_tmp:
-#                 pass
-#             else:
-#                 r_tmp.append(val[len(val) - 2] + val[len(val) - 1])
-#         else:
-#             if (val[len(val) - 1]) in r_tmp:
-#                 pass
-#             else:
-#                 r_tmp.append(val[len(val) - 1])
-#         R[x] = r_tmp
-#         tmp = tmp[: len(tmp) - 1] + chr(ord(tmp[len(tmp) - 1]) + 1)
-# l_keys = list(L.keys())
-# for i in range(1, len(l_keys) - 1):
-#     append_l = L.get(l_keys[i])
-#     for j in range(i + 1, len(l_keys)):
-#         tmp_l = L.get(l_keys[j])
-#         for x in tmp_l:
-#             if x in append_l:
-#                 pass
-#             else:
-#                 append_l.append(x)
-#     L[l_keys[i]] = append_l
-# r_keys = list(R.keys())
-# for i in range(1, len(r_keys) - 1):
-#     append_r = R.get(r_keys[i])
-#     for j in range(i + 1, len(r_keys)):
-#         tmp_r = R.get(r_keys[j])
-#         for x in tmp_r:
-#             if x in append_r:
-#                 pass
-#             else:
-#                 append_r.append(x)
-#     R[r_keys[i]] = append_r
-#
-# mp_idx = []
-# for x in alt.keys():
-#     tmp = alt.get(x)
-#     tmp_list = []
-#     for y in tmp:
-#         if y != "`":
-#             tmp_list.append(str(y))
-#         else:
-#             tmp_list[len(tmp_list) - 1] = tmp_list[len(tmp_list) - 1] + "`"
-#     for y in tmp_list:
-#         if y in mp_idx:
-#             pass
-#         else:
-#             mp_idx.append(y)
-#
-# print(mp_idx)
-# mp = []
-# for i in mp_idx:
-#     mp_str = []
-#     for j in mp_idx:
-#         mp_str.append("")
-#     mp.append(mp_str)
-# for x in alt.keys():
-#     tmp = alt.get(x)
-#     tmp_list = []
-#     for y in tmp:
-#         if y != "`":
-#             tmp_list.append(str(y))
-#         else:
-#             tmp_list[len(tmp_list) - 1] = tmp_list[len(tmp_list) - 1] + "`"
-#     if len(tmp_list) > 1:
-#         for i in range(0, len(tmp_list) - 1):
-#             v = mp_idx.index(tmp_list[i])
-#             g = mp_idx.index(tmp_list[i + 1])
-#             mp[v][g] = "=."
-# print(mp)
-# T = ["!", "(", "*", "+", ")"]
-# NT = ["B", "B`", "T", "T`", "M"]
-# for x in alt.keys():
-#     tmp = alt.get(x)
-#     tmp_list = []
-#     for y in tmp:
-#         if y != "`":
-#             tmp_list.append(str(y))
-#         else:
-#             tmp_list[len(tmp_list) - 1] = tmp_list[len(tmp_list) - 1] + "`"
-#     if len(tmp_list) > 1:
-#         for i in range(0, len(tmp_list) - 1):
-#             if (tmp_list[i] in T) and (tmp_list[i + 1] in NT):
-#                 v = mp_idx.index(tmp_list[i])
-#                 tmp_l = L.get(tmp_list[i + 1])
-#                 for j in tmp_l:
-#                     g = mp_idx.index(j)
-#                     mp[v][g] = "<."
-# for x in alt.keys():
-#     tmp = alt.get(x)
-#     tmp_list = []
-#     for y in tmp:
-#         if y != "`":
-#             tmp_list.append(str(y))
-#         else:
-#             tmp_list[len(tmp_list) - 1] = tmp_list[len(tmp_list) - 1] + "`"
-#     if len(tmp_list) > 1:
-#         for i in range(0, len(tmp_list) - 1):
-#             if (tmp_list[i] in NT) and (tmp_list[i + 1] in T):
-#                 g = mp_idx.index(tmp_list[i + 1])
-#                 tmp_r = R.get(tmp_list[i])
-#                 for j in tmp_r:
-#                     v = mp_idx.index(j)
-#                     mp[v][g] = ".>"
-#
-#
-# in_str = str(input("Enter string ="))
-# print("L=")
-# for x in L:
-#     print(x, "\t", L.get(x))
-# print("\nR=")
-# for x in R:
-#     print(x, "\t", R.get(x))
-# res = ""
-# for x in mp_idx:
-#     res += "\t" + x
-# print(res)
-# for x in range(len(mp_idx)):
-#     res = ""
-#     for y in mp[x]:
-#         res += y + "\t"
-#     print(mp_idx[x], "\t", res)
-# idx_alt = {
-#     "A1": "1",
-#     "B1": "2",
-#     "B`1": "3",
-#     "B`2": "4",
-#     "T1": "5",
-#     "T`1": "6",
-#     "T`2": "7",
-#     "M1": "8",
-#     "M2": "9",
-#     "M3": "10",
-# }
-# res = ""
-# stack1 = []
-# stack1.append(in_str[0])
-# in_str = in_str[1:]
-# while stack1[0] != "A":
-#     if len(in_str) == 0:
-#         svertka = []
-#         svertka = [stack1.pop()] + svertka
-#         while (
-#             len(stack1) > 0
-#             and mp[mp_idx.index(stack1[len(stack1) - 1])][mp_idx.index(svertka[0])]
-#             != "<."
-#         ):
-#             svertka = [stack1.pop()] + svertka
-#         st_svertka = ""
-#         for x in svertka:
-#             st_svertka += x
-#         flag = True
-#         for x in alt.keys():
-#             if alt.get(x) == st_svertka:
-#                 res += idx_alt.get(x) + " "
-#                 flag = False
-#                 stack1.append(x[: len(x) - 1])
-#                 break
-#         if flag:
-#             res = "Can't represent this string"
-#             break
-#         continue
-#
-#     if (mp[mp_idx.index(stack1[len(stack1) - 1])][mp_idx.index(in_str[0])] == "<.") or (
-#         mp[mp_idx.index(stack1[len(stack1) - 1])][mp_idx.index(in_str[0])] == "=."
-#     ):
-#         stack1.append(in_str[0])
-#         in_str = in_str[1:]
-#         continue
-#     if mp[mp_idx.index(stack1[len(stack1) - 1])][mp_idx.index(in_str[0])] == ".>":
-#         svertka = []
-#         svertka = [stack1.pop()] + svertka
-#         while (
-#             len(stack1) > 0
-#             and mp[mp_idx.index(stack1[len(stack1) - 1])][mp_idx.index(svertka[0])]
-#             != "<."
-#         ):
-#             svertka = [stack1.pop()] + svertka
-#         st_svertka = ""
-#         for x in svertka:
-#             st_svertka += x
-#         flag = True
-#         for x in alt.keys():
-#             if alt.get(x) == st_svertka:
-#                 res += idx_alt.get(x) + " "
-#                 flag = False
-#                 stack1.append(x[: len(x) - 1])
-#                 break
-#         if flag:
-#             res = "Can't represent this string"
-#             break
-#         continue
-#     res = "Can't represent this string"
-#     break
-# print(res)
